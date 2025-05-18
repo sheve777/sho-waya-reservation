@@ -1,0 +1,21 @@
+{
+  "name": "japanese-holidays",
+  "version": "1.0.10",
+  "homepage": "https://github.com/osamutake/japanese-holidays-js",
+  "description": "Provides utilities to manipulate japanese holidays.",
+  "main": "./index.js",
+  "scripts": {
+    "test": "make test",
+    "prepublish": "make"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/osamutake/japanese-holidays-js"
+  },
+  "devDependencies": {
+    "coffee-script": ">= 1.10",
+    "uglify-js": "*"
+  },
+  "author": "Osamu Takeuchi <osamu@big.jp>",
+  "license": "MIT"
+}

@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>笑わ家 予約カレンダー</title>
+</head>
+<body>
+  <h1>ご来店日をお選びください</h1>
+  <ul>
+    <% days.forEach(function(day) { %>
+      <li>
+        <a href="/day/<%= day %>"><%= day %></a>
+      </li>
+    <% }) %>
+  </ul>
+</body>
+</html>

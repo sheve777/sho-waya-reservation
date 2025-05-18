@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title><%= date %> の予約時間</title>
+</head>
+<body>
+  <h1><%= date %> の予約時間</h1>
+  <form action="/reserve" method="POST">
+    <input type="hidden" name="date" value="<%= date %>">
+    <ul>
+      <% slots.forEach(function(slot) { %>
+        <li>
+          <label>
+            <input type="radio" name="time" value="<%= slot %>" required>
+            <%= slot %>
+          </label>
+        </li>
+      <% }) %>
+    </ul>
+    <button type="submit">この時間で予約する</button>
+  </form>
+</body>
+</html>
