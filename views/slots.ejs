@@ -1,35 +1,3 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><%= date %>の予約</title>
-  <style>
-    body { font-family: sans-serif; padding: 1em; text-align: center; }
-    h1 { font-size: 1.5em; }
-    form { display: flex; flex-direction: column; align-items: center; }
-    button {
-      padding: 1em;
-      margin: 0.3em;
-      border: none;
-      background-color: #0275d8;
-      color: white;
-      border-radius: 8px;
-      font-size: 1em;
-      width: 200px;
-    }
-    @media (max-width: 480px) {
-      button { width: 90%; margin: 0.5em auto; }
-    }
-  </style>
-</head>
-<body>
-  <h1><%= date %>の予約時間を選択</h1>
-  <form method="POST" action="/reserve">
-    <input type="hidden" name="date" value="<%= date %>">
-    <% slots.forEach(slot => { %>
-      <button type="submit" name="time" value="<%= slot %>"><%= slot %></button>
-    <% }) %>
-  </form>
-</body>
-</html>
+<% slots.forEach(slot => { %>
+  <button class="time-slot" data-time="<%= slot %>"><%= slot %></button>
+<% }) %>

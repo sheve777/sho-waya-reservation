@@ -4,33 +4,52 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>笑わ家 予約</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
   <style>
     body { font-family: sans-serif; padding: 1em; text-align: center; }
-    h1 { font-size: 1.5em; }
-    ul { list-style: none; padding: 0; }
-    li { margin: 0.5em 0; }
-    a.button {
-      display: inline-block;
+    #times button {
+      margin: 0.5em;
       padding: 1em;
-      margin: 0.3em;
       border: none;
-      background-color: #d9534f;
+      background: #007BFF;
       color: white;
-      text-decoration: none;
       border-radius: 8px;
       font-size: 1em;
-    }
-    @media (max-width: 480px) {
-      a.button { width: 90%; display: block; margin: 0.5em auto; }
     }
   </style>
 </head>
 <body>
   <h1>笑わ家 予約カレンダー</h1>
-  <ul>
-    <% days.forEach(day => { %>
-      <li><a class="button" href="/day/<%= day %>"><%= day %></a></li>
-    <% }) %>
-  </ul>
+  <input type="text" id="calendar" placeholder="日付を選んでください">
+  <div id="times"></div>
+
+  <form id="reserveForm" method="POST" action="/reserve">
+    <input type="hidden" name="date" id="dateField">
+    <input type="hidden" name="time" id="timeField">
+  </form>
+
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script>
+    flatpickr("#calendar", {
+      dateFormat: "Y-m-d",
+      minDate: "today",
+      onChange: async function(selectedDates, dateStr) {
+        document.getElementById("times").innerHTML = "読み込み中...";
+        const res = await fetch(`/day/${dateStr}`);
+        const html = await res.text();
+        document.getElementById("times").innerHTML = html;
+        document.getElementById("dateField").value = dateStr;
+      }
+    });
+
+    document.addEventListener("click", e => {
+      if (e.target.classList.contains("time-slot")) {
+        e.preventDefault();
+        const time = e.target.dataset.time;
+        document.getElementById("timeField").value = time;
+        document.getElementById("reserveForm").submit();
+      }
+    });
+  </script>
 </body>
 </html>
