@@ -2,15 +2,34 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>笑わ家 予約カレンダー</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>笑わ家 予約</title>
+  <style>
+    body { font-family: sans-serif; padding: 1em; text-align: center; }
+    h1 { font-size: 1.5em; }
+    ul { list-style: none; padding: 0; }
+    li { margin: 0.5em 0; }
+    a.button {
+      display: inline-block;
+      padding: 1em;
+      margin: 0.3em;
+      border: none;
+      background-color: #d9534f;
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+      font-size: 1em;
+    }
+    @media (max-width: 480px) {
+      a.button { width: 90%; display: block; margin: 0.5em auto; }
+    }
+  </style>
 </head>
 <body>
-  <h1>ご来店日をお選びください</h1>
+  <h1>笑わ家 予約カレンダー</h1>
   <ul>
-    <% days.forEach(function(day) { %>
-      <li>
-        <a href="/day/<%= day %>"><%= day %></a>
-      </li>
+    <% days.forEach(day => { %>
+      <li><a class="button" href="/day/<%= day %>"><%= day %></a></li>
     <% }) %>
   </ul>
 </body>
