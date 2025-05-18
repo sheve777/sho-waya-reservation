@@ -1,3 +1,4 @@
+// index.js
 const express = require('express');
 const fs = require('fs');
 const { google } = require('googleapis');
@@ -17,7 +18,7 @@ dayjs.extend(weekday);
 dayjs.extend(isSameOrAfter);
 dayjs.extend(isSameOrBefore);
 
-// Google Calendar 認証
+// 認証
 const auth = new google.auth.GoogleAuth({
   keyFile: 'credentials.json',
   scopes: ['https://www.googleapis.com/auth/calendar']
@@ -25,7 +26,10 @@ const auth = new google.auth.GoogleAuth({
 const calendar = google.calendar({ version: 'v3', auth });
 const calendarId = process.env.GOOGLE_CALENDAR_ID;
 
-// 定休日チェック
+// 座席設定
+const shopConfig = JSON.parse(fs.readFileSync('shop-config.json', 'utf-8'));
+
+// 定休日判定
 function isClosed(date) {
   return date.day() === 0 || isHoliday.isHoliday(date.toDate());
 }
@@ -33,18 +37,16 @@ function isClosed(date) {
 // 営業時間スロット生成（30分刻み）
 function generateSlots(date) {
   const slots = [];
-  let time = date.clone().hour(17).minute(0);
-  const end = date.clone().hour(22).minute(0);
-
+  let time = date.hour(17).minute(0);
+  const end = date.hour(22).minute(0); // 22:00 まで予約可能
   while (time.isSameOrBefore(end)) {
     slots.push(time.format('HH:mm'));
     time = time.add(30, 'minute');
   }
-
   return slots;
 }
 
-// スロットから使用可能な時間を取得
+// 空きスロット取得（予約上限あり）
 async function getAvailableSlots(dateStr) {
   const date = dayjs(dateStr);
   const events = await calendar.events.list({
@@ -54,11 +56,18 @@ async function getAvailableSlots(dateStr) {
     singleEvents: true,
     orderBy: 'startTime'
   });
-  const busyTimes = events.data.items.map(ev => dayjs(ev.start.dateTime).format('HH:mm'));
-  return generateSlots(date).filter(slot => !busyTimes.includes(slot));
+
+  const slotCounts = {};
+  events.data.items.forEach(ev => {
+    const slot = dayjs(ev.start.dateTime).format('HH:mm');
+    slotCounts[slot] = (slotCounts[slot] || 0) + 1;
+  });
+
+  const max = shopConfig.maxReservationPerSlot || 5;
+  return generateSlots(date).filter(slot => (slotCounts[slot] || 0) < max);
 }
 
-// トップページ：日付選択
+// トップページ：日付一覧
 app.get('/', async (req, res) => {
   const days = [];
   const today = dayjs();
@@ -71,18 +80,19 @@ app.get('/', async (req, res) => {
   res.render('index', { days });
 });
 
-// スロット選択ページ
+// 時間選択ページ
 app.get('/day/:date', async (req, res) => {
   const { date } = req.params;
   const slots = await getAvailableSlots(date);
   res.render('slots', { date, slots });
 });
 
-// 予約確定
+// 予約処理
 app.post('/reserve', async (req, res) => {
   const { date, time } = req.body;
   const start = dayjs(`${date}T${time}`);
   const end = start.add(30, 'minute');
+
   await calendar.events.insert({
     calendarId,
     requestBody: {
@@ -91,10 +101,11 @@ app.post('/reserve', async (req, res) => {
       end: { dateTime: end.toISOString() }
     }
   });
+
   res.send('予約が完了しました！');
 });
 
-// サーバー起動
+// 起動
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`予約システムがポート${PORT}で起動しました`);
