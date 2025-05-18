@@ -142,11 +142,14 @@ app.post('/reserve', async (req, res) => {
     }
   });
 
-  res.send(`
-    <h2 style="font-size: 1.5em;">予約が完了しました！</h2>
-    <p>日付: ${date} / 時間: ${time} / 氏名: ${name} / 人数: ${people}名 / 席種: ${seatType}</p>
-    <a href="/" style="display:inline-block;margin-top:1em;font-size:1.1em;">トップに戻る</a>
-  `);
+  res.render('success', {
+  date,
+  time,
+  name,
+  people,
+  seatType
+});
+
 });
 
 // サーバー起動

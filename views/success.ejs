@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>予約完了</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 2em;
+      text-align: center;
+    }
+    h2 {
+      font-size: 1.8em;
+      color: #2c3e50;
+    }
+    p {
+      font-size: 1.2em;
+      margin: 0.5em 0;
+    }
+    a {
+      display: inline-block;
+      margin-top: 1.5em;
+      font-size: 1.1em;
+      text-decoration: none;
+      color: #0066cc;
+    }
+  </style>
+</head>
+<body>
+  <h2>予約が完了しました！</h2>
+  <p>日付: <%= date %></p>
+  <p>時間: <%= time %></p>
+  <p>氏名: <%= name %></p>
+  <p>人数: <%= people %>名</p>
+  <p>席種: <%= seatType === 'table' ? 'テーブル席' : 'カウンター席' %></p>
+
+  <a href="/">トップに戻る</a>
+</body>
+</html>
