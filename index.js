@@ -1,11 +1,14 @@
 const express = require('express');
 const fs = require('fs');
+const path = require('path');
 const { google } = require('googleapis');
 const dayjs = require('dayjs');
 const weekday = require('dayjs/plugin/weekday');
 const isSameOrAfter = require('dayjs/plugin/isSameOrAfter');
-const isSameOrBefore = require('dayjs/plugin/isSameOrBefore');
+const utc = require('dayjs/plugin/utc');
+const timezone = require('dayjs/plugin/timezone');
 const isHoliday = require('japanese-holidays');
+
 require('dotenv').config();
 
 const app = express();
@@ -15,9 +18,11 @@ app.set('view engine', 'ejs');
 
 dayjs.extend(weekday);
 dayjs.extend(isSameOrAfter);
-dayjs.extend(isSameOrBefore);
+dayjs.extend(utc);
+dayjs.extend(timezone);
+dayjs.tz.setDefault("Asia/Tokyo");
 
-// Googleカレンダー認証
+// Google Calendar 認証
 const auth = new google.auth.GoogleAuth({
   keyFile: 'credentials.json',
   scopes: ['https://www.googleapis.com/auth/calendar']
@@ -25,29 +30,30 @@ const auth = new google.auth.GoogleAuth({
 const calendar = google.calendar({ version: 'v3', auth });
 const calendarId = process.env.GOOGLE_CALENDAR_ID;
 
-// 店舗設定読み込み
+// 店舗設定の読み込み
 const shopConfig = JSON.parse(fs.readFileSync('shop-config.json', 'utf-8'));
+const MAX_PER_SLOT = shopConfig.maxReservationPerSlot || 18;
 
-// 定休日チェック
+// 定休日（日曜または祝日）
 function isClosed(date) {
   return date.day() === 0 || isHoliday.isHoliday(date.toDate());
 }
 
-// 時間スロット（17:00〜22:00の30分刻み）
+// スロット生成（30分刻み）
 function generateSlots(date) {
   const slots = [];
   let time = date.hour(17).minute(0);
-  const end = date.hour(22).minute(0);
-  while (time.isSameOrBefore(end)) {
+  const end = date.hour(22).minute(0).add(30, 'minute');
+  while (time.isBefore(end)) {
     slots.push(time.format('HH:mm'));
     time = time.add(30, 'minute');
   }
   return slots;
 }
 
-// 予約済み時間と人数を考慮して利用可能なスロットを返す
+// 予約済み件数を考慮し空きスロットだけ返す
 async function getAvailableSlots(dateStr) {
-  const date = dayjs(dateStr);
+  const date = dayjs.tz(dateStr, "Asia/Tokyo");
   const events = await calendar.events.list({
     calendarId,
     timeMin: date.startOf('day').toISOString(),
@@ -58,15 +64,14 @@ async function getAvailableSlots(dateStr) {
 
   const slotCounts = {};
   events.data.items.forEach(ev => {
-    const slot = dayjs(ev.start.dateTime).format('HH:mm');
+    const slot = dayjs(ev.start.dateTime).tz().format('HH:mm');
     slotCounts[slot] = (slotCounts[slot] || 0) + 1;
   });
 
-  const max = shopConfig.maxReservationPerSlot || 5;
-  return generateSlots(date).filter(slot => (slotCounts[slot] || 0) < max);
+  return generateSlots(date).filter(slot => (slotCounts[slot] || 0) < MAX_PER_SLOT);
 }
 
-// トップページ（日付一覧）
+// トップページ（カレンダー形式で予約日選択）
 app.get('/', async (req, res) => {
   const days = [];
   const today = dayjs();
@@ -79,61 +84,72 @@ app.get('/', async (req, res) => {
   res.render('index', { days });
 });
 
-// 時間スロット一覧ページ
-app.get('/day/:date', async (req, res) => {
-  const { date } = req.params;
+// スロット表示ページ
+app.get('/day', async (req, res) => {
+  const { date } = req.query;
   const slots = await getAvailableSlots(date);
-  res.render('slots', { date, slots });
+  res.render('slots', { date, slots, error: null });
 });
 
-// 予約処理（POST）
+// POST予約処理
 app.post('/reserve', async (req, res) => {
-  const { name, seats, type, date, time } = req.body;
-  const numSeats = parseInt(seats);
+  const { date, time, name, people, seatType } = req.body;
+  const peopleCount = parseInt(people);
 
-  const maxSeats = shopConfig.tables.reduce((sum, table) => {
-    if (type === 'table' && table.type === 'table') return sum + table.seats;
-    if (type === 'counter' && table.type === 'counter') return sum + table.seats;
-    return sum;
-  }, 0);
-
-  // 席数制限チェック
-  if (
-    (type === 'table' && numSeats < 3) ||
-    (type === 'counter' && numSeats > 2) ||
-    numSeats > 8
-  ) {
-    return res.send('不正な予約条件です。ルールに従ってください。');
+  if (!name || !date || !time || !people || !seatType) {
+    return res.render('slots', {
+      date,
+      slots: await getAvailableSlots(date),
+      error: 'すべての項目を入力してください。'
+    });
   }
 
-  // テーブル2席を使用する場合（5名以上）
-  let usedSeats = numSeats;
-  if (type === 'table' && numSeats >= 5) {
-    usedSeats = 8;
+  if (peopleCount > 8 || peopleCount < 1) {
+    return res.render('slots', {
+      date,
+      slots: await getAvailableSlots(date),
+      error: '人数は1〜8人の間で指定してください。'
+    });
   }
 
-  const start = dayjs(`${date}T${time}`);
+  // 席ルールの判定
+  if (seatType === 'counter' && peopleCount > 2) {
+    return res.render('slots', {
+      date,
+      slots: await getAvailableSlots(date),
+      error: 'カウンター席は2名までの予約に限られます。'
+    });
+  }
+
+  if (seatType === 'table' && peopleCount < 3) {
+    return res.render('slots', {
+      date,
+      slots: await getAvailableSlots(date),
+      error: 'テーブル席は3名以上からご利用いただけます。'
+    });
+  }
+
+  const start = dayjs.tz(`${date} ${time}`, "Asia/Tokyo");
   const end = start.add(30, 'minute');
 
   await calendar.events.insert({
     calendarId,
     requestBody: {
-      summary: `笑わ家予約：${name}様（${seats}名／${type === 'table' ? 'テーブル' : 'カウンター'}）`,
-      start: {
-        dateTime: start.toISOString(),
-        timeZone: 'Asia/Tokyo'
-      },
-      end: {
-        dateTime: end.toISOString(),
-        timeZone: 'Asia/Tokyo'
-      }
+      summary: `予約 - ${name}（${people}名 / ${seatType === 'table' ? 'テーブル' : 'カウンター'}）`,
+      start: { dateTime: start.toISOString() },
+      end: { dateTime: end.toISOString() },
+      description: `氏名: ${name} / 人数: ${people} / 席種: ${seatType}`
     }
   });
 
-  res.send('予約が完了しました！');
+  res.send(`
+    <h2 style="font-size: 1.5em;">予約が完了しました！</h2>
+    <p>日付: ${date} / 時間: ${time} / 氏名: ${name} / 人数: ${people}名 / 席種: ${seatType}</p>
+    <a href="/" style="display:inline-block;margin-top:1em;font-size:1.1em;">トップに戻る</a>
+  `);
 });
 
-// 起動
+// サーバー起動
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`予約システムがポート${PORT}で起動しました`);

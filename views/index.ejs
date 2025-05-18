@@ -1,55 +1,75 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>笑わ家 予約</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>笑わ家 予約ページ</title>
   <style>
-    body { font-family: sans-serif; padding: 1em; text-align: center; }
-    #times button {
-      margin: 0.5em;
-      padding: 1em;
-      border: none;
-      background: #007BFF;
-      color: white;
-      border-radius: 8px;
+    body {
+      font-family: sans-serif;
+      padding: 1rem;
+      background-color: #fdfdfd;
+      color: #333;
+    }
+    h1 {
+      font-size: 1.8em;
+      color: #444;
+      margin-bottom: 1rem;
+    }
+    form {
+      margin-bottom: 2rem;
+    }
+    input[type="date"] {
+      padding: 0.5rem;
       font-size: 1em;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    button {
+      padding: 0.5rem 1rem;
+      font-size: 1em;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      margin-left: 0.5rem;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    .day-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .day-list a {
+      display: inline-block;
+      padding: 0.5rem 0.75rem;
+      background-color: #eee;
+      border-radius: 4px;
+      text-decoration: none;
+      color: #333;
+    }
+    .day-list a:hover {
+      background-color: #ccc;
     }
   </style>
 </head>
 <body>
-  <h1>笑わ家 予約カレンダー</h1>
-  <input type="text" id="calendar" placeholder="日付を選んでください">
-  <div id="times"></div>
+  <h1>笑わ家 ご予約</h1>
 
-  <form id="reserveForm" method="POST" action="/reserve">
-    <input type="hidden" name="date" id="dateField">
-    <input type="hidden" name="time" id="timeField">
+  <form method="GET" action="/day">
+    <label for="date">予約日を選択してください：</label><br />
+    <input type="date" name="date" required />
+    <button type="submit">時間を選ぶ</button>
   </form>
 
-  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-  <script>
-    flatpickr("#calendar", {
-      dateFormat: "Y-m-d",
-      minDate: "today",
-      onChange: async function(selectedDates, dateStr) {
-        document.getElementById("times").innerHTML = "読み込み中...";
-        const res = await fetch(`/day/${dateStr}`);
-        const html = await res.text();
-        document.getElementById("times").innerHTML = html;
-        document.getElementById("dateField").value = dateStr;
-      }
-    });
-
-    document.addEventListener("click", e => {
-      if (e.target.classList.contains("time-slot")) {
-        e.preventDefault();
-        const time = e.target.dataset.time;
-        document.getElementById("timeField").value = time;
-        document.getElementById("reserveForm").submit();
-      }
-    });
-  </script>
+  <h2>今週の予約日一覧</h2>
+  <div class="day-list">
+    <% days.forEach(function(day) { %>
+      <a href="/day?date=<%= day %>"><%= day %></a>
+    <% }); %>
+  </div>
 </body>
 </html>
