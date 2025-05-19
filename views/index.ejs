@@ -3,45 +3,43 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>笑わ家 予約</title>
+  <title>笑わ家 ご予約</title>
   <style>
     body {
-      font-family: sans-serif;
-      margin: 20px;
-      padding: 0;
-      background: #f9f9f9;
+      font-family: 'Helvetica Neue', sans-serif;
+      padding: 2em;
+      text-align: center;
+      background-color: #fdfdfd;
     }
-    h1 {
-      font-size: 1.4em;
+    h2 {
+      font-size: 1.5em;
       margin-bottom: 1em;
-    }
-    label {
-      display: block;
-      margin-top: 1.5em;
-      font-weight: bold;
     }
     input[type="date"] {
       font-size: 1.2em;
-      padding: 0.4em;
-      width: 100%;
+      padding: 0.5em;
+      margin-bottom: 1em;
     }
     button {
-      display: none; /* ボタン削除 */
+      font-size: 1.2em;
+      padding: 0.5em 1.5em;
+      background-color: #333;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #555;
     }
   </style>
 </head>
 <body>
-  <h1>ご希望の日付を選んでください</h1>
-  <form id="calendarForm">
-    <label for="date">予約日</label>
-    <input type="date" id="date" name="date" min="<%= days[0] %>" max="<%= days[days.length - 1] %>">
+  <h2>ご予約日を選択してください</h2>
+  <form action="/day" method="get">
+    <input type="date" name="date" min="<%= days[0] %>" max="<%= days[days.length - 1] %>" required>
+    <br>
+    <button type="submit">空き時間を確認</button>
   </form>
-  <script>
-    document.getElementById("date").addEventListener("change", function () {
-      if (this.value) {
-        window.location.href = "/day/" + this.value;
-      }
-    });
-  </script>
 </body>
 </html>

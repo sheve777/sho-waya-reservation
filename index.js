@@ -8,7 +8,6 @@ const isSameOrAfter = require('dayjs/plugin/isSameOrAfter');
 const utc = require('dayjs/plugin/utc');
 const timezone = require('dayjs/plugin/timezone');
 const isHoliday = require('japanese-holidays');
-
 require('dotenv').config();
 
 const app = express();
@@ -51,7 +50,7 @@ function generateSlots(date) {
   return slots;
 }
 
-// 予約済み件数を考慮し空きスロットだけ返す
+// 空きスロットを取得
 async function getAvailableSlots(dateStr) {
   const date = dayjs.tz(dateStr, "Asia/Tokyo");
   const events = await calendar.events.list({
@@ -71,7 +70,7 @@ async function getAvailableSlots(dateStr) {
   return generateSlots(date).filter(slot => (slotCounts[slot] || 0) < MAX_PER_SLOT);
 }
 
-// トップページ（カレンダー形式で予約日選択）
+// トップページ：カレンダーで日付選択
 app.get('/', async (req, res) => {
   const days = [];
   const today = dayjs();
@@ -84,14 +83,17 @@ app.get('/', async (req, res) => {
   res.render('index', { days });
 });
 
-// スロット表示ページ
+// 空きスロット表示
 app.get('/day', async (req, res) => {
   const { date } = req.query;
+  if (!date) {
+    return res.redirect('/');
+  }
   const slots = await getAvailableSlots(date);
   res.render('slots', { date, slots, error: null });
 });
 
-// POST予約処理
+// 予約処理
 app.post('/reserve', async (req, res) => {
   const { date, time, name, people, seatType } = req.body;
   const peopleCount = parseInt(people);
@@ -142,14 +144,11 @@ app.post('/reserve', async (req, res) => {
     }
   });
 
-  res.render('success', {
-  date,
-  time,
-  name,
-  people,
-  seatType
-});
-
+  res.send(`
+    <h2 style="font-size: 1.5em;">予約が完了しました！</h2>
+    <p>日付: ${date} / 時間: ${time} / 氏名: ${name} / 人数: ${people}名 / 席種: ${seatType}</p>
+    <a href="/" style="display:inline-block;margin-top:1em;font-size:1.1em;">トップに戻る</a>
+  `);
 });
 
 // サーバー起動
