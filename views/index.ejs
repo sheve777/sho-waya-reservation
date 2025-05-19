@@ -3,43 +3,28 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>笑わ家 ご予約</title>
+  <title>笑わ家 予約</title>
   <style>
-    body {
-      font-family: 'Helvetica Neue', sans-serif;
-      padding: 2em;
-      text-align: center;
-      background-color: #fdfdfd;
-    }
-    h2 {
-      font-size: 1.5em;
-      margin-bottom: 1em;
-    }
-    input[type="date"] {
-      font-size: 1.2em;
-      padding: 0.5em;
-      margin-bottom: 1em;
-    }
-    button {
-      font-size: 1.2em;
-      padding: 0.5em 1.5em;
-      background-color: #333;
+    body { font-family: sans-serif; padding: 1em; }
+    h2 { font-size: 1.5em; margin-bottom: 0.5em; }
+    ul { list-style: none; padding: 0; }
+    li { margin: 0.5em 0; }
+    a.button {
+      display: inline-block;
+      padding: 0.6em 1.2em;
+      background-color: #ff6347;
       color: white;
-      border: none;
       border-radius: 5px;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #555;
+      text-decoration: none;
     }
   </style>
 </head>
 <body>
-  <h2>ご予約日を選択してください</h2>
-  <form action="/day" method="get">
-    <input type="date" name="date" min="<%= days[0] %>" max="<%= days[days.length - 1] %>" required>
-    <br>
-    <button type="submit">空き時間を確認</button>
-  </form>
+  <h2>予約日を選んでください</h2>
+  <ul>
+    <% days.forEach(function(day) { %>
+      <li><a class="button" href="/day/<%= day %>"><%= day %></a></li>
+    <% }); %>
+  </ul>
 </body>
 </html>

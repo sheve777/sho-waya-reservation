@@ -1,102 +1,52 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>笑わ家 予約時間選択</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= date %>の予約</title>
   <style>
-    body {
-      font-family: sans-serif;
-      padding: 1em;
-      background-color: #f8f8f8;
-      margin: 0;
-    }
-    h1 {
-      font-size: 1.4em;
-      margin-bottom: 1em;
-    }
-    .slots {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-bottom: 2em;
-    }
-    .slots form {
-      flex: 1 1 calc(33% - 10px);
-      min-width: 100px;
-    }
-    button {
-      width: 100%;
-      padding: 0.8em;
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-size: 1em;
-    }
-    form.reserve-form {
-      background: white;
-      padding: 1em;
-      border-radius: 8px;
-      box-shadow: 0 0 6px rgba(0, 0, 0, 0.1);
-    }
-    label {
-      font-weight: bold;
-      margin-top: 1em;
-      display: block;
-    }
-    input, select {
-      width: 100%;
-      padding: 0.6em;
-      font-size: 1em;
-      margin-top: 0.4em;
-    }
-    .back {
-      display: inline-block;
-      margin-top: 1em;
-      font-size: 0.9em;
-      color: #333;
-    }
+    body { font-family: sans-serif; padding: 1em; }
+    form { display: flex; flex-direction: column; gap: 0.5em; }
+    select, input { padding: 0.5em; font-size: 1em; }
+    .error { color: red; font-weight: bold; }
   </style>
 </head>
 <body>
-  <h1><%= date %> の予約</h1>
+  <h2><%= date %> の予約</h2>
 
-  <div class="slots">
-    <% slots.forEach(slot => { %>
-      <form method="POST" action="/reserve">
-        <input type="hidden" name="date" value="<%= date %>" />
-        <input type="hidden" name="time" value="<%= slot %>" />
-        <button type="submit"><%= slot %></button>
-      </form>
-    <% }); %>
-  </div>
+  <% if (error) { %>
+    <p class="error"><%= error %></p>
+  <% } %>
 
-  <form method="POST" action="/reserve" class="reserve-form">
-    <input type="hidden" name="date" value="<%= date %>" />
+  <form action="/reserve" method="POST">
+    <input type="hidden" name="date" value="<%= date %>">
 
-    <label for="time">時間</label>
-    <select name="time" required>
-      <% slots.forEach(slot => { %>
-        <option value="<%= slot %>"><%= slot %></option>
-      <% }); %>
-    </select>
+    <label>名前: <input type="text" name="name" required></label>
 
-    <label for="name">名前</label>
-    <input type="text" name="name" placeholder="お名前" required />
+    <label>人数:
+      <select name="people" required>
+        <% for (let i = 1; i <= 8; i++) { %>
+          <option value="<%= i %>"><%= i %>名</option>
+        <% } %>
+      </select>
+    </label>
 
-    <label for="seats">人数（1〜8人）</label>
-    <input type="number" name="seats" min="1" max="8" required />
+    <label>席種:
+      <select name="seatType" required>
+        <option value="counter">カウンター</option>
+        <option value="table">テーブル</option>
+      </select>
+    </label>
 
-    <label for="type">席種</label>
-    <select name="type" required>
-      <option value="counter">カウンター</option>
-      <option value="table">テーブル</option>
-    </select>
+    <label>時間:
+      <select name="time" required>
+        <% slots.forEach(slot => { %>
+          <option value="<%= slot %>"><%= slot %></option>
+        <% }); %>
+      </select>
+    </label>
 
     <button type="submit">予約する</button>
   </form>
-
-  <a class="back" href="/">← 日付選択に戻る</a>
 </body>
 </html>
