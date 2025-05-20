@@ -1,42 +1,108 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <title>予約カレンダー - 笑わ家</title>
-  <link rel="stylesheet" href="/style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>笑わ家 予約カレンダー</title>
+  <style>
+    body {
+      font-family: 'Helvetica', sans-serif;
+      padding: 1em;
+      margin: 0;
+      background: #fffdf5;
+      color: #333;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 0.2em;
+    }
+
+    .month-nav {
+      text-align: center;
+      margin-bottom: 1em;
+    }
+
+    .calendar {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+      font-size: 0.9em;
+    }
+
+    .calendar .day {
+      background: #f9f9f9;
+      border: 1px solid #ddd;
+      text-align: center;
+      padding: 0.8em 0;
+      border-radius: 4px;
+    }
+
+    .calendar .day a {
+      display: block;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .calendar .day .label {
+      font-weight: bold;
+    }
+
+    .calendar .day.available {
+      background-color: #e0f7e9;
+    }
+
+    .calendar .day.unavailable {
+      background-color: #f5e0e0;
+      color: #999;
+      pointer-events: none;
+    }
+
+    .calendar .weekday-label {
+      font-weight: bold;
+      text-align: center;
+    }
+
+    @media (max-width: 600px) {
+      .calendar {
+        font-size: 0.8em;
+      }
+    }
+  </style>
 </head>
 <body>
-  <h1 style="text-align: center;">「予約日時」の選択</h1>
+  <h1><%= monthLabel %> の予約</h1>
 
-  <p style="text-align: center;">
-    <span style="color: black;">●</span> 受付中　
-    <span style="color: red;">×</span> 締め切り
-  </p>
+  <div class="month-nav">
+    <a href="/?year=<%= prev.year() %>&month=<%= prev.month() + 1 %>">← 前月</a>
+    &nbsp;|&nbsp;
+    <a href="/?year=<%= next.year() %>&month=<%= next.month() + 1 %>">次月 →</a>
+  </div>
 
-  <% calendarData.forEach(month => { %>
-    <h2><%= month.title %></h2>
-    <table class="calendar">
-      <tr>
-        <% ['日','月','火','水','木','金','土'].forEach(d => { %>
-          <th><%= d %></th>
-        <% }) %>
-      </tr>
-      <tr>
-        <% for (let i = 0; i < month.startDay; i++) { %>
-          <td></td>
+  <div class="calendar">
+    <% const weekdayLabels = ['日', '月', '火', '水', '木', '金', '土']; %>
+    <% weekdayLabels.forEach(label => { %>
+      <div class="weekday-label"><%= label %></div>
+    <% }); %>
+
+    <% const firstDay = new Date(`${year}-${month}-01`).getDay(); %>
+    <% for (let i = 0; i < firstDay; i++) { %>
+      <div></div>
+    <% } %>
+
+    <% days.forEach(day => { %>
+      <div class="day <%= day.status === '◯' ? 'available' : 'unavailable' %>">
+        <% if (day.status === '◯') { %>
+          <a href="/day?date=<%= day.date %>">
+            <div class="label"><%= day.date.split('-')[2] %></div>
+            <div><%= day.status %></div>
+          </a>
+        <% } else { %>
+          <div class="label"><%= day.date.split('-')[2] %></div>
+          <div><%= day.status %></div>
         <% } %>
-        <% month.days.forEach((d, idx) => { %>
-          <td>
-            <% if (d.status === '×') { %>
-              <span style="color: red;"><%= d.day %><br>×</span>
-            <% } else { %>
-              <a href="/day?date=<%= d.date %>"><%= d.day %><br>●</a>
-            <% } %>
-          </td>
-          <% if ((idx + month.startDay + 1) % 7 === 0) { %></tr><tr><% } %>
-        <% }) %>
-      </tr>
-    </table>
-  <% }) %>
+      </div>
+    <% }); %>
+  </div>
 </body>
 </html>

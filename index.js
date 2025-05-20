@@ -8,7 +8,6 @@ const isSameOrAfter = require('dayjs/plugin/isSameOrAfter');
 const utc = require('dayjs/plugin/utc');
 const timezone = require('dayjs/plugin/timezone');
 const isHoliday = require('japanese-holidays');
-
 require('dotenv').config();
 
 const app = express();
@@ -32,25 +31,26 @@ const calendarId = process.env.GOOGLE_CALENDAR_ID;
 
 // 店舗設定読み込み
 const shopConfig = JSON.parse(fs.readFileSync('shop-config.json', 'utf-8'));
+const MAX_PER_SLOT = shopConfig.maxReservationPerSlot || 18;
 
-// 定休日チェック（日曜または祝日）
+// 定休日か判定（日曜 or 祝日）
 function isClosed(date) {
   return date.day() === 0 || isHoliday.isHoliday(date.toDate());
 }
 
-// スロット生成（30分刻み）
+// 30分刻みのスロット生成
 function generateSlots(date) {
   const slots = [];
   let time = date.hour(17).minute(0);
-  const end = date.hour(22).minute(0);
-  while (time.isBefore(end) || time.isSame(end)) {
+  const end = date.hour(22).minute(0).add(30, 'minute');
+  while (time.isBefore(end)) {
     slots.push(time.format('HH:mm'));
     time = time.add(30, 'minute');
   }
   return slots;
 }
 
-// 空きスロット取得
+// 指定日のスロット空き状況を取得
 async function getAvailableSlots(dateStr) {
   const date = dayjs.tz(dateStr, "Asia/Tokyo");
   const events = await calendar.events.list({
@@ -67,43 +67,51 @@ async function getAvailableSlots(dateStr) {
     slotCounts[slot] = (slotCounts[slot] || 0) + 1;
   });
 
-  const max = shopConfig.maxReservationPerSlot || 18;
-  return generateSlots(date).filter(slot => (slotCounts[slot] || 0) < max);
+  return generateSlots(date).filter(slot => (slotCounts[slot] || 0) < MAX_PER_SLOT);
 }
 
-// トップページ（予約日選択）
-app.get('/', async (req, res) => {
-  const today = dayjs();
-  const months = [today.startOf('month'), today.add(1, 'month').startOf('month')];
-  const calendarData = [];
+// カレンダー描画補助：月の配列を返す
+async function buildCalendar(year, month) {
+  const startDate = dayjs(`${year}-${month}-01`);
+  const endDate = startDate.endOf('month');
+  const days = [];
 
-  for (const month of months) {
-    const days = [];
-    for (let i = 0; i < month.daysInMonth(); i++) {
-      const date = month.add(i, 'day');
-      const isHolidayOrSunday = isClosed(date);
-      const slots = isHolidayOrSunday ? [] : await getAvailableSlots(date.format('YYYY-MM-DD'));
-      const status = isHolidayOrSunday || slots.length === 0 ? '×' : '●';
-      days.push({ date: date.format('YYYY-MM-DD'), day: date.date(), status });
+  for (let d = startDate; d.isSameOrBefore(endDate); d = d.add(1, 'day')) {
+    if (isClosed(d)) {
+      days.push({ date: d.format('YYYY-MM-DD'), status: '×' });
+    } else {
+      const slots = await getAvailableSlots(d.format('YYYY-MM-DD'));
+      days.push({ date: d.format('YYYY-MM-DD'), status: slots.length > 0 ? '◯' : '×' });
     }
-    calendarData.push({
-      title: month.format('YYYY年M月'),
-      startDay: month.day(), // 月初の曜日
-      days
-    });
   }
 
-  res.render('index', { calendarData });
+  return {
+    year,
+    month,
+    days,
+    monthLabel: `${year}年${month}月`,
+    prev: dayjs(`${year}-${month}-01`).subtract(1, 'month'),
+    next: dayjs(`${year}-${month}-01`).add(1, 'month')
+  };
+}
+
+// トップページ（カレンダー）
+app.get('/', async (req, res) => {
+  const year = req.query.year || dayjs().year();
+  const month = req.query.month || dayjs().month() + 1;
+
+  const calendarData = await buildCalendar(year, month);
+  res.render('index', calendarData);
 });
 
-// スロット選択ページ
-app.get('/day/:date', async (req, res) => {
-  const { date } = req.params;
+// スロット表示
+app.get('/day', async (req, res) => {
+  const { date } = req.query;
   const slots = await getAvailableSlots(date);
   res.render('slots', { date, slots, error: null });
 });
 
-// 予約処理
+// 予約POST
 app.post('/reserve', async (req, res) => {
   const { date, time, name, people, seatType } = req.body;
   const peopleCount = parseInt(people);
@@ -124,12 +132,11 @@ app.post('/reserve', async (req, res) => {
     });
   }
 
-  // 席ルールの適用
-  if (seatType === 'counter' && peopleCount > 2) {
+  if (seatType === 'counter' && peopleCount > 4) {
     return res.render('slots', {
       date,
       slots: await getAvailableSlots(date),
-      error: 'カウンター席は2名までの予約に限られます。'
+      error: 'カウンター席は4名までの予約に限られます。'
     });
   }
 
@@ -154,13 +161,11 @@ app.post('/reserve', async (req, res) => {
     }
   });
 
-  res.render('success', {
-    name,
-    date,
-    time,
-    people,
-    seatType
-  });
+  res.send(`
+    <h2 style="font-size: 1.5em;">予約が完了しました！</h2>
+    <p>日付: ${date} / 時間: ${time} / 氏名: ${name} / 人数: ${people}名 / 席種: ${seatType}</p>
+    <a href="/" style="display:inline-block;margin-top:1em;font-size:1.1em;">トップに戻る</a>
+  `);
 });
 
 // サーバー起動
