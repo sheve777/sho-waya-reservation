@@ -5,6 +5,7 @@ const { google } = require('googleapis');
 const dayjs = require('dayjs');
 const weekday = require('dayjs/plugin/weekday');
 const isSameOrAfter = require('dayjs/plugin/isSameOrAfter');
+const isSameOrBefore = require('dayjs/plugin/isSameOrBefore');
 const utc = require('dayjs/plugin/utc');
 const timezone = require('dayjs/plugin/timezone');
 const isHoliday = require('japanese-holidays');
@@ -17,6 +18,7 @@ app.set('view engine', 'ejs');
 
 dayjs.extend(weekday);
 dayjs.extend(isSameOrAfter);
+dayjs.extend(isSameOrBefore);
 dayjs.extend(utc);
 dayjs.extend(timezone);
 dayjs.tz.setDefault("Asia/Tokyo");
