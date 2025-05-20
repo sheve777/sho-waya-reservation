@@ -2,29 +2,41 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>笑わ家 予約</title>
-  <style>
-    body { font-family: sans-serif; padding: 1em; }
-    h2 { font-size: 1.5em; margin-bottom: 0.5em; }
-    ul { list-style: none; padding: 0; }
-    li { margin: 0.5em 0; }
-    a.button {
-      display: inline-block;
-      padding: 0.6em 1.2em;
-      background-color: #ff6347;
-      color: white;
-      border-radius: 5px;
-      text-decoration: none;
-    }
-  </style>
+  <title>予約カレンダー - 笑わ家</title>
+  <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <h2>予約日を選んでください</h2>
-  <ul>
-    <% days.forEach(function(day) { %>
-      <li><a class="button" href="/day/<%= day %>"><%= day %></a></li>
-    <% }); %>
-  </ul>
+  <h1 style="text-align: center;">「予約日時」の選択</h1>
+
+  <p style="text-align: center;">
+    <span style="color: black;">●</span> 受付中　
+    <span style="color: red;">×</span> 締め切り
+  </p>
+
+  <% calendarData.forEach(month => { %>
+    <h2><%= month.title %></h2>
+    <table class="calendar">
+      <tr>
+        <% ['日','月','火','水','木','金','土'].forEach(d => { %>
+          <th><%= d %></th>
+        <% }) %>
+      </tr>
+      <tr>
+        <% for (let i = 0; i < month.startDay; i++) { %>
+          <td></td>
+        <% } %>
+        <% month.days.forEach((d, idx) => { %>
+          <td>
+            <% if (d.status === '×') { %>
+              <span style="color: red;"><%= d.day %><br>×</span>
+            <% } else { %>
+              <a href="/day?date=<%= d.date %>"><%= d.day %><br>●</a>
+            <% } %>
+          </td>
+          <% if ((idx + month.startDay + 1) % 7 === 0) { %></tr><tr><% } %>
+        <% }) %>
+      </tr>
+    </table>
+  <% }) %>
 </body>
 </html>

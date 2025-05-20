@@ -73,15 +73,27 @@ async function getAvailableSlots(dateStr) {
 
 // トップページ（予約日選択）
 app.get('/', async (req, res) => {
-  const days = [];
   const today = dayjs();
-  for (let i = 0; i < 14; i++) {
-    const date = today.add(i, 'day');
-    if (!isClosed(date)) {
-      days.push(date.format('YYYY-MM-DD'));
+  const months = [today.startOf('month'), today.add(1, 'month').startOf('month')];
+  const calendarData = [];
+
+  for (const month of months) {
+    const days = [];
+    for (let i = 0; i < month.daysInMonth(); i++) {
+      const date = month.add(i, 'day');
+      const isHolidayOrSunday = isClosed(date);
+      const slots = isHolidayOrSunday ? [] : await getAvailableSlots(date.format('YYYY-MM-DD'));
+      const status = isHolidayOrSunday || slots.length === 0 ? '×' : '●';
+      days.push({ date: date.format('YYYY-MM-DD'), day: date.date(), status });
     }
+    calendarData.push({
+      title: month.format('YYYY年M月'),
+      startDay: month.day(), // 月初の曜日
+      days
+    });
   }
-  res.render('index', { days });
+
+  res.render('index', { calendarData });
 });
 
 // スロット選択ページ

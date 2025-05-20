@@ -1,0 +1,21 @@
+/* public/style.css */
+.calendar {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 2em;
+}
+.calendar th, .calendar td {
+  border: 1px solid #ccc;
+  width: 14.2%;
+  text-align: center;
+  padding: 0.5em;
+}
+.calendar a {
+  display: inline-block;
+  text-decoration: none;
+  font-size: 0.9em;
+  color: black;
+}
+.calendar td:hover {
+  background-color: #f0f0f0;
+}
